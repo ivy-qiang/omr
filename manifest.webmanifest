@@ -1,0 +1,14 @@
+{
+  "name": "答题卡智能判卷",
+  "short_name": "答题卡",
+  "description": "拍照即判卷，单选题自动识别，本地运算不上传",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1a73e8",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

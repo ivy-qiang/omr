@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>答题卡模板（打印页）</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #fff; }
+  body {
+    width: 210mm; height: 297mm; margin: 0 auto;
+    font-family: "Times New Roman", "SimSun", "宋体", serif;
+    color: #000;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    position: relative; overflow: hidden;
+  }
+  .toolbar {
+    position: fixed; top: 8px; right: 8px; z-index: 99;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .toolbar input { padding: 6px 10px; border: 1px solid #888; border-radius: 6px; width: 220px; font-size: 14px; }
+  .toolbar button { padding: 8px 16px; border: 1px solid #888; background: #fff;
+    border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .toolbar button.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  @media print { .toolbar, .toolbar-extra { display: none; } }
+
+  /* 标题区（与 docx 一致：3 行） */
+  .title-block {
+    position: absolute;
+    left: 0; right: 0; text-align: center; font-weight: bold;
+  }
+  /* 字段行 */
+  .fields {
+    position: absolute; left: 19mm; right: 31mm;
+    font-size: 12pt; display: flex; gap: 6mm; align-items: flex-end;
+  }
+  .fields .f { white-space: nowrap; }
+  .fields .line { display: inline-block; border-bottom: 0.4mm solid #000; height: 5mm; margin-left: 1mm; }
+  .fields .line.w1 { min-width: 22mm; }
+  .fields .line.w2 { min-width: 24mm; }
+  .fields .line.w3 { min-width: 18mm; }
+
+  /* 题号 + 选项框 */
+  .qnum {
+    position: absolute; font-size: 11pt; font-weight: bold;
+    text-align: right; width: 6mm; line-height: 6.5mm;
+  }
+  .optbox {
+    position: absolute; width: 7mm; height: 4.7mm;
+    border: 0.3mm solid #000;
+    text-align: center; font-size: 10pt; font-weight: bold; line-height: 4.7mm;
+  }
+
+  /* 定位块（四角，OCR 识别用） */
+  .loc {
+    position: absolute; background: #000;
+  }
+
+  /* 底部说明 */
+  .note {
+    position: absolute; left: 19mm; right: 31mm; bottom: 12mm;
+    font-size: 9pt; color: #444; text-align: left; line-height: 1.6;
+  }
+
+  .toolbar-extra {
+    position: fixed; top: 56px; right: 8px; z-index: 99;
+    display: flex; gap: 6px; font-size: 13px; color: #444; background: #fff8e0;
+    padding: 6px 10px; border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <input id="titleInput" type="text" placeholder="考试名称（覆盖第 3 行）">
+    <button class="primary" onclick="window.print()">🖨 打印答题卡</button>
+  </div>
+  <div class="toolbar-extra">
+    <label><input type="checkbox" id="hideMarkers" onchange="toggleMarkers()"> 不打印四角定位块（已有原版印刷件用）</label>
+  </div>
+
+<script src="layout.js"></script>
+<script>
+  /* ============== 标题区 ============== */
+  const titleTop = 12; // mm
+  LAYOUT.titleLines.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'title-block';
+    el.style.top = (titleTop + i * 7.5) + 'mm';
+    el.style.fontSize = line.font;
+    el.style.fontWeight = line.bold !== false ? 'bold' : 'normal';
+    el.textContent = line.text;
+    el.dataset.lineIndex = i;
+    document.body.appendChild(el);
+  });
+
+  // 标题 URL 参数
+  const params = new URLSearchParams(location.search);
+  const t = params.get('title');
+  if (t) {
+    document.querySelector('[data-line-index="2"]').textContent = t + '答题卡';
+    document.getElementById('titleInput').value = t;
+  }
+  document.getElementById('titleInput').addEventListener('change', e => {
+    const v = e.target.value.trim();
+    document.querySelector('[data-line-index="2"]').textContent = (v ? v : '考试作答卡') + '答题卡';
+    const u = new URL(location); u.searchParams.set('title', v); history.replaceState(null, '', u);
+  });
+
+  /* ============== 字段行 ============== */
+  const fieldsEl = document.createElement('div');
+  fieldsEl.className = 'fields';
+  fieldsEl.style.top = '40mm';
+  fieldsEl.innerHTML =
+    '<span class="f">专业<span class="line w1"></span></span>' +
+    '<span class="f">班级<span class="line w2"></span></span>' +
+    '<span class="f">姓名<span class="line w1"></span></span>' +
+    '<span class="f">学号<span class="line w2"></span></span>';
+  document.body.appendChild(fieldsEl);
+
+  /* ============== 50 道题 ============== */
+  for (let q = 1; q <= 50; q++) {
+    const lp = questionLabelMm(q);
+    const num = document.createElement('div');
+    num.className = 'qnum';
+    num.style.left = lp.x + 'mm';
+    num.style.top  = lp.y + 'mm';
+    num.textContent = q + '.';
+    document.body.appendChild(num);
+
+    for (let i = 0; i < 5; i++) {
+      const ob = optionBoxMm(q, i);
+      const d = document.createElement('div');
+      d.className = 'optbox';
+      d.style.left = ob.x + 'mm';
+      d.style.top  = ob.y + 'mm';
+      d.style.width  = ob.w + 'mm';
+      d.style.height = ob.h + 'mm';
+      d.textContent = LAYOUT.options[i];
+      document.body.appendChild(d);
+    }
+  }
+
+  /* ============== 四角定位块 ============== */
+  LAYOUT.locators.forEach((p, idx) => {
+    const d = document.createElement('div');
+    d.className = 'loc';
+    d.dataset.loc = idx;
+    const s = LAYOUT.locatorSize_mm;
+    d.style.left   = p.x + 'mm';
+    d.style.top    = p.y + 'mm';
+    d.style.width  = s + 'mm';
+    d.style.height = s + 'mm';
+    document.body.appendChild(d);
+  });
+
+  // 是否打印定位块
+  if (params.get('nomark') === '1') toggleMarkers();
+  function toggleMarkers() {
+    const hide = document.getElementById('hideMarkers').checked;
+    document.querySelectorAll('.loc').forEach(el => el.style.display = hide ? 'none' : 'block');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="答题卡">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<title>答题卡智能判卷</title>
+<style>
+  :root {
+    --primary: #1a73e8; --bg: #f4f6f9; --card: #fff; --line: #e3e6ea;
+    --ok: #1e8e3e; --bad: #d93025; --text: #202124; --sub: #5f6368;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; padding-bottom: 80px; }
+  header { background: var(--primary); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header p { font-size: 12px; opacity: .85; margin-top: 2px; }
+
+  nav { display: flex; background: var(--card); border-bottom: 1px solid var(--line);
+    position: sticky; top: 58px; z-index: 9; }
+  nav button { flex: 1; padding: 11px 0; border: none; background: none; font-size: 14px; color: var(--sub);
+    border-bottom: 2.5px solid transparent; cursor: pointer; }
+  nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+  main { padding: 14px; max-width: 860px; margin: 0 auto; }
+  .page { display: none; } .page.active { display: block; }
+
+  .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .card h2 { font-size: 15px; margin-bottom: 10px; }
+  .card h2 small { font-weight: 400; color: var(--sub); font-size: 12px; margin-left: 6px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  select, input[type=text], input[type=number] {
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
+  input[type=text]:focus, select:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  .btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;
+    background: var(--primary); color: #fff; }
+  .btn.gray { background: #f1f3f4; color: var(--text); }
+  .btn.green { background: var(--ok); }
+  .btn.red { background: var(--bad); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.big { width: 100%; padding: 14px; font-size: 16px; }
+  .muted { color: var(--sub); font-size: 12.5px; }
+
+  /* 答案录入网格 */
+  #answerGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+  .aq { border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px; text-align: center; }
+  .aq .qn { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+  .aq .opts { display: flex; gap: 3px; justify-content: center; }
+  .aq .opts button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line);
+    background: #fff; font-size: 12px; cursor: pointer; color: var(--sub); }
+  .aq .opts button.sel { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+
+  /* 结果卡片 */
+  .sheet { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; background: #fff; }
+  .sheet-head { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sheet-head .score { font-size: 26px; font-weight: 700; color: var(--primary); }
+  .sheet-head .score small { font-size: 13px; color: var(--sub); font-weight: 400; }
+  .ansline { padding: 0 14px 10px; font-size: 13px; line-height: 1.9; word-break: break-all; }
+  .ansline b { display: inline-block; min-width: 22px; text-align: center; padding: 1px 3px; border-radius: 4px; margin: 1px; }
+  .ansline b.ok { color: var(--ok); background: #e6f4ea; }
+  .ansline b.bad { color: #fff; background: var(--bad); }
+  .ansline b.warn { color: #b06000; background: #fef7e0; }
+  .sheet-head input { width: 90px; }
+  .debugbox { padding: 0 14px 14px; }
+  .debugbox canvas { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+  details summary { cursor: pointer; padding: 8px 14px; color: var(--primary); font-size: 13px; }
+
+  /* 统计 */
+  .statrow { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat { flex: 1; min-width: 100px; background: var(--card); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat .v { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .stat .k { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .errbar { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 13px; }
+  .errbar .lab { width: 44px; text-align: right; color: var(--sub); }
+  .errbar .bar { height: 14px; border-radius: 7px; background: var(--bad); min-width: 2px; }
+  .errbar .pct { color: var(--sub); font-size: 12px; width: 70px; }
+
+  .warnTag { font-size: 11px; background: #fef7e0; color: #b06000; border-radius: 4px; padding: 2px 6px; }
+  .loading { text-align: center; color: var(--sub); padding: 18px 0; font-size: 14px; }
+  .empty { text-align: center; color: var(--sub); padding: 30px 0; font-size: 14px; }
+  table.export { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.export th, table.export td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+  table.export th { background: #f8f9fa; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📸 答题卡智能判卷</h1>
+  <p>拍照即可判卷 · 支持批量 · 离线可用（首次加载后）</p>
+</header>
+
+<nav>
+  <button data-page="grade" class="active">判卷</button>
+  <button data-page="exam">考试管理</button>
+  <button data-page="stats">统计导出</button>
+  <button data-page="help">使用帮助</button>
+</nav>
+
+<main>
+  <!-- ============ 判卷 ============ -->
+  <section class="page active" id="page-grade">
+    <div class="card">
+      <h2>1️⃣ 选择考试</h2>
+      <div class="row">
+        <select id="examSelect" style="flex:1;min-width:200px"></select>
+        <button class="btn gray" onclick="switchTab('exam')">＋ 新建/编辑</button>
+      </div>
+      <p class="muted" id="examInfo" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <h2>2️⃣ 扫描答题卡 <small>可一次多选，逐张自动判卷</small></h2>
+      <div class="row" style="margin-bottom:10px">
+        <label class="btn big" style="text-align:center">
+          📷 拍照 / 选择答题卡图片
+          <input id="fileInput" type="file" accept="image/*" multiple capture="environment" style="display:none">
+        </label>
+      </div>
+      <div class="row">
+        <span class="muted">涂黑判定阈值：<b id="thVal">0.45</b></span>
+        <input id="thresh" type="range" min="0.25" max="0.7" step="0.01" value="0.45" style="flex:1">
+        <button class="btn gray" id="regradeBtn" onclick="regradeAll()" disabled>按新阈值重新判卷</button>
+      </div>
+      <p class="muted" style="margin-top:6px">识别偏高/偏低时调整阈值：分数普遍偏低 → 调高；未涂被误判 → 调低。</p>
+    </div>
+
+    <div id="progress" class="loading" style="display:none"></div>
+    <div id="sheetList"></div>
+  </section>
+
+  <!-- ============ 考试管理 ============ -->
+  <section class="page" id="page-exam">
+    <div class="card">
+      <h2>新建 / 编辑考试</h2>
+      <div class="row" style="margin-bottom:10px">
+        <input type="text" id="examName" placeholder="考试名称，如：2024学年第一学期期末" style="flex:1;min-width:220px">
+        <select id="examCount">
+          <option value="50" selected>50 题</option>
+          <option value="40">40 题</option>
+          <option value="30">30 题</option>
+          <option value="20">20 题</option>
+        </select>
+        <select id="examPer">
+          <option value="2" selected>每题 2 分（满分 100）</option>
+          <option value="1">每题 1 分</option>
+          <option value="2.5">每题 2.5 分（满分 125）</option>
+          <option value="3">每题 3 分</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="startAnswerEdit()">录入答案</button>
+        <label class="btn gray">📥 导入答案 JSON<input type="file" id="importJson" accept=".json" style="display:none"></label>
+        <button class="btn gray" onclick="exportExamJson()">📤 导出当前答案</button>
+        <button class="btn red" onclick="deleteExam()">🗑 删除当前考试</button>
+      </div>
+      <div id="answerGrid"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn green" onclick="saveExam()">💾 保存考试</button>
+        <span class="muted" id="saveMsg"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>已保存的考试</h2>
+      <div id="examTable"></div>
+    </div>
+  </section>
+
+  <!-- ============ 统计导出 ============ -->
+  <section class="page" id="page-stats">
+    <div class="statrow" id="statCards"></div>
+    <div class="card">
+      <h2>各题错误率 <small>红色越长，错误越多</small></h2>
+      <div id="errList"><p class="empty">暂无判卷数据</p></div>
+    </div>
+    <div class="card">
+      <h2>成绩明细</h2>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn green" onclick="exportCSV()">📊 导出成绩 CSV（Excel 可开）</button>
+      </div>
+      <div id="statTable"><p class="empty">暂无判卷数据</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 帮助 ============ -->
+  <section class="page" id="page-help">
+    <div class="card">
+      <h2>🚀 快速上手（3 步）</h2>
+      <p style="line-height:2;font-size:14px">
+        ① <b>打印答题卡</b>：在本机/电脑浏览器打开 <a href="template.html" target="_blank">答题卡模板</a>，输入考试名称，A4 100% 缩放黑白打印，每个学生一张。<br>
+        ② <b>录入答案</b>：在「考试管理」新建考试，点选每题正确答案后保存（或导入 JSON 文件）。<br>
+        ③ <b>拍照判卷</b>：在「判卷」页选好考试 → 拍照（可连续拍多张）→ 自动出分。拍摄时把整张卡放进取景框、光线均匀、避免阴影遮挡四角黑块。
+      </p>
+    </div>
+    <div class="card">
+      <h2>📌 拍摄要求（影响识别率的关键）</h2>
+      <p style="line-height:2;font-size:14px">
+        · 整张答题卡完整入镜，四角的黑色定位方块不能被裁掉或遮挡；<br>
+        · 光线均匀，避免手机阴影盖住答题区；<br>
+        · 选项必须【涂满涂黑】，轻点一下或打勾可能识别不到；<br>
+        · 涂改请擦干净，残影可能被识别为「多涂」；<br>
+        · 一张照片里只放一张答题卡。
+      </p>
+    </div>
+    <div class="card">
+      <h2>❓ 常见问题</h2>
+      <p style="line-height:2;font-size:14px">
+        <b>分数明显偏低？</b>→ 阈值调高（如 0.55）后点「重新判卷」。<br>
+        <b>空白被识别成了答案？</b>→ 阈值调低（如 0.35）。<br>
+        <b>某张提示"定位失败"？</b>→ 重拍，确保四个黑块完整清晰。<br>
+        <b>成绩怎么交给 Excel？</b>→「统计导出」页下载 CSV，双击即可用 Excel 打开。<br>
+        <b>换手机数据会丢吗？</b>→ 考试答案存在本机浏览器里，请用「导出 JSON」备份。
+      </p>
+    </div>
+  </section>
+</main>
+
+<script src="lib/opencv.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/@techstark/opencv-js@4.9.0-release.3/dist/opencv.js';document.head.appendChild(s);"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

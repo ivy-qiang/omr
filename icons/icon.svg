@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a73e8"/>
+  <!-- 答题卡外框 -->
+  <rect x="40" y="36" width="112" height="130" rx="6" fill="#fff" stroke="#1a73e8" stroke-width="3"/>
+  <!-- 顶部标题横线 -->
+  <rect x="52" y="48" width="60" height="5" rx="2" fill="#1a73e8"/>
+  <rect x="52" y="58" width="40" height="3" rx="1.5" fill="#9bb6e0"/>
+  <!-- 选项行 -->
+  <g fill="#9bb6e0">
+    <rect x="52" y="76" width="12" height="12" rx="2"/>
+    <rect x="52" y="94" width="12" height="12" rx="2"/>
+    <rect x="52" y="112" width="12" height="12" rx="2"/>
+    <rect x="52" y="130" width="12" height="12" rx="2"/>
+    <rect x="52" y="148" width="12" height="12" rx="2"/>
+    <rect x="92" y="76" width="12" height="12" rx="2"/>
+    <rect x="92" y="94" width="12" height="12" rx="2"/>
+    <rect x="92" y="112" width="12" height="12" rx="2"/>
+    <rect x="92" y="130" width="12" height="12" rx="2"/>
+    <rect x="92" y="148" width="12" height="12" rx="2"/>
+  </g>
+  <!-- 已涂的两个选项 -->
+  <rect x="52" y="76" width="12" height="12" rx="2" fill="#202124"/>
+  <rect x="92" y="130" width="12" height="12" rx="2" fill="#202124"/>
+  <!-- 对勾 -->
+  <path d="M120 80 L130 92 L150 70" stroke="#1e8e3e" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
